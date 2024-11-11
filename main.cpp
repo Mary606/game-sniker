@@ -1,4 +1,10 @@
 #include <iostream>
+#include <cstdlib> 
+#include <ctime>   
+#include <unistd.h> 
+#include <termios.h> 
+#include <fcntl.h> 
+#include <ncurses.h>
 using namespace std;
 bool gameOver;
 const int width = 20;
@@ -19,7 +25,7 @@ void Setup()
 }
 void Draw()
 {
-    system("clear"); // Limpa a tela
+    system ("clear");
 
     // Desenha o topo do mapa
     for (int i = 0; i < width + 2; i++)
@@ -49,25 +55,91 @@ void Draw()
     cout << endl;
 }
     
-    
 
+ int kbhit() {
+    struct termios oldt, newt;
+    int ch;
+    int oldf;
+
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
+    ch = getchar();
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    fcntl(STDIN_FILENO, F_SETFL, oldf);
+
+    if (ch != EOF) {
+        ungetc(ch, stdin);
+        return 1;
+    }
+
+    return 0;
+}
 
 void Input()
 {
-
+     if (kbhit())
+     {
+        switch (getchar()) {
+            case 'a': dir = LEFT; break;
+            case 'd': dir = RIGHT; break;
+            case 'w': dir = UP; break;
+            case 's': dir = DOWN; break;
+            case 'x': gameOver = true; break;
+        
+        }
+    }
 }
+
 void Logic()
 {
-
+   switch(dir){
+    case LEFT:
+        x--;
+        break;
+        
+    case RIGHT:
+        x++;
+        break;
+        
+    case UP: 
+        y--;
+        break;
+        
+    case DOWN:
+        y++;
+        break;
+        
+    default:
+        break;
+   }
+  
+    if (x >= width) x = 0; else if (x < 0) x = width - 1;
+    if (y >= height) y = 0; else if (y < 0) y = height - 1;
+    
+    
 }
-int main()
-{
+int main(){
+    
+    initscr(); 
+    clear();
+    noecho();
+    cbreak();
+    curs_set(0); 
+    
+    srand(time(0));
     Setup();
     while (!gameOver)
     {
         Draw();
         Input();
         Logic();
+        usleep(100000);
     }
     
     return 0;
